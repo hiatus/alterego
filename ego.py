@@ -3,6 +3,13 @@
 import socket
 
 
+HELP = '''\
+Commands
+--------
+help : this help
+exit : terminate connection'''
+
+
 class Config:
     MAX_BUFF = 32768
     SRV_PORT = 4444
@@ -79,6 +86,19 @@ class Connection(object):
         self.srv_sock.close()
 
 
+class Builtin:
+    def help():
+        print(HELP)
+
+    def cd():
+        # Handled remotely
+        pass
+
+    def exit(c: Connection):
+        c.close()
+        exit(0)
+
+
 if __name__ == '__main__':
     try:
         c = Connection()
@@ -92,14 +112,22 @@ if __name__ == '__main__':
 
                 print(rmt, end = '')
 
-                # Read and send command
+                # Read command
                 while not (lcl := input().strip()):
                     print(prompt, end = '')
 
+                # Send command
                 c.send(lcl.encode())
 
-                if lcl.split()[0] == 'exit':
-                    break
+                # Handle bultins
+                if lcl.split()[0] == 'cd':
+                    Builtin.cd()
+
+                elif lcl.split()[0] == 'help':
+                    Builtin.help()
+
+                elif lcl.split()[0] == 'exit':
+                    Builtin.exit(c)
 
             except Exception as x:
                 print(f'[!] {type(x).__name__}: {x}')
