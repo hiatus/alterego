@@ -104,41 +104,40 @@ if __name__ == '__main__':
         c = Connection()
         print(f'[+] Connection from {c}\n')
 
-        while True:
-            try:
-                # Receive (output and) prompt
-                rmt = c.recv().decode()
-                prompt = rmt.split('\n')[-1]
-
-                print(rmt, end = '')
-
-                # Read command
-                while not (lcl := input().strip()):
-                    print(prompt, end = '')
-
-                # Send command
-                c.send(lcl.encode())
-
-                # Handle bultins
-                if lcl.split()[0] == 'cd':
-                    Builtin.cd()
-
-                elif lcl.split()[0] == 'help':
-                    Builtin.help()
-
-                elif lcl.split()[0] == 'exit':
-                    Builtin.exit(c)
-
-            except Exception as x:
-                print(f'[!] {type(x).__name__}: {x}')
-                break
-
-        c.close()
-
     except Exception as x:
         print(f'{type(x).__name__}: {x}')
 
+    while True:
+        try:
+            # Receive (output and) prompt
+            rmt = c.recv().decode()
+            prompt = rmt.split('\n')[-1]
+
+            print(rmt, end = '')
+
+            # Read command
+            while not (lcl := input().strip()):
+                print(prompt, end = '')
+
+            # Send command
+            c.send(lcl.encode())
+
+            # Handle bultins
+            if lcl.split()[0] == 'cd':
+                Builtin.cd()
+
+            elif lcl.split()[0] == 'help':
+                Builtin.help()
+
+            elif lcl.split()[0] == 'exit':
+                Builtin.exit(c)
+
+        except Exception as x:
+            print(f'[!] {type(x).__name__}: {x}')
+            break
+
     try:
         c.close()
+
     except:
         pass
